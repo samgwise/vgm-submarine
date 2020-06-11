@@ -1,0 +1,11 @@
+Surface is when the mask off animation starts and at greater than 0m.
+Underwater is when the mask is on and equal to or less than 0m.
+
+Fire equates to danger.
+
+Oxygen is when the oxygen warning is triggered and the ui appears.
+
+Redweed entered when soft stinger/sound design plays.
+Redweed exit when stinger/sound design stops.
+
+Safe reef entrance can be hard to judge, but listen to the tone of the sound design, the depth and the lighting.

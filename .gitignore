@@ -1,0 +1,4 @@
+.precomp
+.lock
+*.exe
+midi_sender.toml

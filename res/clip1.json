@@ -1,0 +1,243 @@
+{
+    "frameEvents": [
+        {
+            "path": "/begin",
+            "message": null,
+            "delta": 0
+        },
+        {
+            "path": "/Player/Active",
+            "message": null,
+            "delta": 0
+        },
+        {
+            "path": "/Environment/DropPod",
+            "message": null,
+            "delta": 40
+        },
+        {
+            "path": "/GameState/Danger",
+            "message": null,
+            "delta": 40
+        },
+        {
+            "path": "/EnvMods/Vehicle",
+            "message": null,
+            "delta": 40
+        },
+        {
+            "path": "/GameState/Damaged",
+            "message": null,
+            "delta": 63.986
+        },
+        {
+            "path": "/Player/Paused",
+            "message": null,
+            "delta": 121.900
+        },
+        {
+            "path": "/Player/Active",
+            "message": null,
+            "delta": 122.401
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 130.809
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 130.809
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 165.634
+        },
+        {
+            "path": "/Environment/SafeReef",
+            "message": null,
+            "delta": 165.634
+        },
+        {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 200.167
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 202.818
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 202.818
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 203.868
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 204.901
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 213.035
+        },
+        {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 272.134
+        },
+        {
+            "path": "/Environment/DropOff",
+            "message": null,
+            "delta": 273.545
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 277.307
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 318.427
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 319.452
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 320.137
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 323.175
+        },
+        {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 368.073
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 368.600
+        },
+        {
+            "path": "/Environment/RedWeed",
+            "message": null,
+            "delta": 396.451
+        },
+        {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 419.042
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 426.623
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 426.623
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 431.473
+        },
+        {
+            "path": "/Environment/DropOff",
+            "message": null,
+            "delta": 458.063
+        },
+        {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 467.082
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 472.849
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 472.849
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 474.979
+        },
+        {
+            "path": "/Environment/SafeReef",
+            "message": null,
+            "delta": 494.764
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 511.067
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 512.503
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 551.347
+        },
+        {
+            "path": "/EnvMods/Underwater",
+            "message": null,
+            "delta": 552.918
+        },
+        {
+            "path": "/EnvMods/Surface",
+            "message": null,
+            "delta": 578.310
+        },
+        {
+            "path": "/Environment/DropPod",
+            "message": null,
+            "delta": 588.157
+        },
+        {
+            "path": "/EnvMods/Vehicle",
+            "message": null,
+            "delta": 588.157
+        },
+        {
+            "path": "/GameState/Damaged",
+            "message": null,
+            "delta": 588.157
+        },
+        {
+            "path": "/end",
+            "message": null,
+            "delta": 904.5
+        }
+    ],
+    "meta": {
+        "fileName": "2020.05.18-13.45.mp4",
+        "fps": 30
+    }
+}
