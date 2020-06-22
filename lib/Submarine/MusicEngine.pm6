@@ -3,6 +3,7 @@ use ScaleVec;
 
 use Submarine::Types;
 use Submarine::NoteOut;
+use Submarine::MusicEngine::Harmony;
 
 #! ScaleVec declaration helper
 our sub sv(*@vector --> ScaleVec) {
@@ -31,6 +32,8 @@ constant nuetral = sv(0, 1);
 constant relaxed = sv(0, 0.8);
 constant lively = sv(0, 0.6);
 
+
+
 # Processing windows size in seconds
 constant chunk-size = 0.1;
 
@@ -40,7 +43,7 @@ our class ScoreEvent {
 }
 
 our class ScoreState {
-    has ScaleVec @.pitch-layer = [chromatic.transpose(60), chromatic];
+    has ScaleVec @.pitch-layer = [chromatic.transpose(60), chromatic, tonic];
     has ScaleVec @.rhythmn-layer = sv(0, 1), sv(0, 1);
 
     has ScoreEvent @!event-queue;
@@ -103,6 +106,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my ScoreState $score-state .= new;
     my $last-score-state = CurrentState.new;
     my Int $scale-test = 0;
+    my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
 
     $score-state.queue: 0, ($score-state.map-onto-pitch(++$scale-test mod 12).head,
                         120,
@@ -175,14 +179,24 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
 
                 my List $event-window = $score-state.map-into-rhythmn($_, $_ + chunk-size) given $delta - $score-epoch;
 
+                if $event-window.head.Int mod 4 == 0 {
+                    say "Next chord";
+                    $chord-progression-model .= pick-next;
+                    $score-state.pitch-layer[2] = $chord-progression-model.chord;
+                }
+
                 # Schedule play out
                 for $score-state.poll(($delta - $score-epoch) + chunk-size) -> $event {
                     $out.send-note: 'track-1',
                         |$event.event,
                         :at($score-epoch + $event.delta);
 
+                    $out.send-note: 'track-2',
+                        $score-state.map-onto-pitch($score-state.pitch-layer[2].vector.head).head - 12, 80, 0.5,
+                        :at($score-epoch + $event.delta);
+
                     $score-state.queue: $score-state.map-into-rhythmn($event.delta).head + 0.5,
-                        ($score-state.map-onto-pitch(++$scale-test mod 12).head,
+                        ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
                         120,
                         0.5);
                 }
