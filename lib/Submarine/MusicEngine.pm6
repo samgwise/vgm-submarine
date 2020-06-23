@@ -107,6 +107,14 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my $last-score-state = CurrentState.new;
     my Int $scale-test = 0;
     my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
+    my $phrase-length = 8;
+    my $bar-length = 4;
+    # my $chord-plan = do gather for 0..^$phrase-length {
+    #     take ($chord-progression-model.value, $chord-progression-model) for 0..^$bar-length;
+    #     $chord-progression-model .= pick-next;
+    # }
+
+    my $current-beat = 0;
 
     $score-state.queue: 0, ($score-state.map-onto-pitch(++$scale-test mod 12).head,
                         120,
@@ -170,7 +178,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         $score-state.rhythmn-layer[1] = lively
                     }
                     default {
-                        say "Ignoreing unhandled state { .perl } to chromatic";
+                        say "Ignoreing unhandled state { .perl }";
                     }
                 }
 
@@ -179,11 +187,36 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
 
                 my List $event-window = $score-state.map-into-rhythmn($_, $_ + chunk-size) given $delta - $score-epoch;
 
-                if $event-window.head.Int mod 4 == 0 {
-                    say "Next chord";
-                    $chord-progression-model .= pick-next;
-                    $score-state.pitch-layer[2] = $chord-progression-model.chord;
+                # Change beat or correct for the case when the beat moves backwards due to a change in counting
+                if $current-beat < $event-window.head.floor + 1 or $current-beat > $event-window.head.floor + 1 {
+                    say "{ $event-window.head }, $current-beat - {$current-beat mod $bar-length} of $bar-length";
+                    $current-beat = $event-window.head.floor + 1;
+
+                    # Change Bar
+                    if ($current-beat mod $bar-length) == 0 {
+                        say "Changing chord";
+                        $chord-progression-model .= pick-next;
+                        $score-state.pitch-layer[2] = $chord-progression-model.chord
+                    }
+
+                    # Schedule notes
+
+                    $score-state.queue: $current-beat,
+                        ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                        120,
+                        0.5);
+
+                    $score-state.queue: $current-beat + 0.5,
+                        ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                        120,
+                        0.5);
                 }
+
+                # if $event-window.head.Int mod 4 == 0 {
+                #     say "Next chord";
+                #     $chord-progression-model .= pick-next;
+                #     $score-state.pitch-layer[2] = $chord-progression-model.chord;
+                # }
 
                 # Schedule play out
                 for $score-state.poll(($delta - $score-epoch) + chunk-size) -> $event {
@@ -195,10 +228,10 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         $score-state.map-onto-pitch($score-state.pitch-layer[2].vector.head).head - 12, 80, 0.5,
                         :at($score-epoch + $event.delta);
 
-                    $score-state.queue: $score-state.map-into-rhythmn($event.delta).head + 0.5,
-                        ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
-                        120,
-                        0.5);
+                    # $score-state.queue: $score-state.map-into-rhythmn($event.delta).head + 0.5,
+                    #     ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                    #     120,
+                    #     0.5);
                 }
                 # my $quaver-count = floor($event-window[0] / 0.5) * 0.5;
                 # if $quaver-count >= $event-window[0] and $quaver-count = $event-window[1] {
