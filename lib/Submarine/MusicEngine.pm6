@@ -27,15 +27,13 @@ constant redweed-scale = sv(0, 2, 4, 5, 7, 8, 10, 12);
 constant chromatic = sv(1..12);
 
 # Tempo scales
-constant slow = sv(0, 1.2);
-constant nuetral = sv(0, 1);
-constant relaxed = sv(0, 0.8);
-constant lively = sv(0, 0.6);
+constant slow = sv(0, 0.6);
+constant nuetral = sv(0, 0.5);
+constant relaxed = sv(0, 0.4);
+constant lively = sv(0, 0.35);
 
-
-
-# Processing windows size in seconds
-constant chunk-size = 0.1;
+# Time signiture
+constant common-time = sv(0, 2, 4, 6);
 
 our class ScoreEvent {
     has Numeric $.delta = 0;
@@ -44,7 +42,7 @@ our class ScoreEvent {
 
 our class ScoreState {
     has ScaleVec @.pitch-layer = [chromatic.transpose(60), chromatic, tonic];
-    has ScaleVec @.rhythmn-layer = sv(0, 1), sv(0, 1);
+    has ScaleVec @.rhythmn-layer = nuetral, nuetral, common-time;
 
     has ScoreEvent @!event-queue;
     has ScoreEvent @!unsorted-events;
@@ -96,6 +94,11 @@ our class ScoreState {
     method map-onto-scale(+@values) {
         eager reduce { $^b.step($^a) }, $_, |@!pitch-layer[0..*-2].reverse for @values
     }
+
+    # Map values onto rhythmn structure
+    method map-onto-tempo(+@values) {
+        eager reduce { $^b.step($^a) }, $_, |@!rhythmn-layer[0..1].reverse for @values
+    }
 }
 
 our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is-playing) is export
@@ -116,14 +119,57 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
 
     my $current-beat = 0;
 
-    $score-state.queue: 0, ($score-state.map-onto-pitch(++$scale-test mod 12).head,
-                        120,
-                        0.5);
+    my Promise $continue-generation .= new;
 
+    # # Generation thread
+    # start {
+    #     CATCH { default { warn .gist } }
+    #     signal(SIGINT).tap( { $continue-generation.break('SIGTERM received') } );
+    #     my $generation-delta = $delta;
+    #     my $beat-counter = 0;
+    #     for 0..Inf {
+    #         my $start-generation = now;
+    #         # Check for stop state
+    #         last unless $continue-generation.status ~~ Planned;
+    #         # Schedule
+    #         if is-playing() == 1 {
+    #             await Promise.at($generation-delta).then: {
+    #                 my $beat = $score-state.map-into-rhythmn($generation-delta - $score-epoch).head + 1;
+    #                 $score-state.queue: $beat,
+    #                     ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+    #                     120,
+    #                     0.5);
+
+    #                 $score-state.queue: $beat + 0.5,
+    #                     ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+    #                     120,
+    #                     0.5);
+    #             }
+    #             # Offset by the next interval
+    #             $generation-delta +=
+    #                 [-] $score-state.map-onto-rhythmn($beat-counter + 1, $beat-counter);
+    #             $beat-counter++;
+    #         }
+    #         else {
+    #             await Promise.at($generation-delta);
+    #             # Offset by the previous interval
+    #             $generation-delta +=
+    #                 [-] $score-state.map-onto-rhythmn($beat-counter, $beat-counter - 1);
+    #         }
+
+    #         say "Generation pass finished in {now - $start-generation}";
+
+    #     }
+    # }
+
+    # Scheduling and event handler loop
     for 0..Inf {
         #
         # Process, ready for the next tick
         #
+        # my $next-beat-interval = [-] ($current-beat + 1, $current-beat).map( { $score-state.rhythmn-layer[0].step: $_ } );
+        my $next-beat-interval = [-] $score-state.map-onto-tempo($current-beat + 1, $current-beat);
+
         if is-playing() == 1 {
             await Promise.at($delta).then: {
                 my $game-state = get-state;
@@ -185,54 +231,46 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 # After state checks, save the new state for next time
                 $last-score-state = $game-state;
 
-                my List $event-window = $score-state.map-into-rhythmn($_, $_ + chunk-size) given $delta - $score-epoch;
+                # # Change beat or correct for the case when the beat moves backwards due to a change in counting
+                # if $current-beat < $event-window.head.floor + 1 or $current-beat > $event-window.head.floor + 1 {
+                #     say "{ $event-window.head }, $current-beat - {$current-beat mod $bar-length} of $bar-length";
+                #     $current-beat = $event-window.head.floor + 1;
 
-                # Change beat or correct for the case when the beat moves backwards due to a change in counting
-                if $current-beat < $event-window.head.floor + 1 or $current-beat > $event-window.head.floor + 1 {
-                    say "{ $event-window.head }, $current-beat - {$current-beat mod $bar-length} of $bar-length";
-                    $current-beat = $event-window.head.floor + 1;
+                #     # Change Bar
+                #     if ($current-beat mod $bar-length) == 0 {
+                #         say "Changing chord";
+                #         $chord-progression-model .= pick-next;
+                #         $score-state.pitch-layer[2] = $chord-progression-model.chord
+                #     }
 
-                    # Change Bar
-                    if ($current-beat mod $bar-length) == 0 {
-                        say "Changing chord";
-                        $chord-progression-model .= pick-next;
-                        $score-state.pitch-layer[2] = $chord-progression-model.chord
-                    }
-
-                    # Schedule notes
-
-                    $score-state.queue: $current-beat,
-                        ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
-                        120,
-                        0.5);
-
-                    $score-state.queue: $current-beat + 0.5,
-                        ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
-                        120,
-                        0.5);
-                }
-
-                # if $event-window.head.Int mod 4 == 0 {
-                #     say "Next chord";
-                #     $chord-progression-model .= pick-next;
-                #     $score-state.pitch-layer[2] = $chord-progression-model.chord;
                 # }
 
-                # Schedule play out
-                for $score-state.poll(($delta - $score-epoch) + chunk-size) -> $event {
-                    $out.send-note: 'track-1',
-                        |$event.event,
-                        :at($score-epoch + $event.delta);
-
-                    $out.send-note: 'track-2',
-                        $score-state.map-onto-pitch($score-state.pitch-layer[2].vector.head).head - 12, 80, 0.5,
-                        :at($score-epoch + $event.delta);
-
-                    # $score-state.queue: $score-state.map-into-rhythmn($event.delta).head + 0.5,
-                    #     ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
-                    #     120,
-                    #     0.5);
+                my $beats-per-bar = $score-state.rhythmn-layer[2].scale-pv.elems;
+                my $beat-of-bar = $score-state.rhythmn-layer[2].reflexive-step($current-beat);
+                my $is-on-beat = $beat-of-bar == $beat-of-bar.truncate;
+                # Start of bar actions
+                if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
+                    say "Next chord";
+                    $chord-progression-model .= pick-next;
+                    $score-state.pitch-layer[2] = $chord-progression-model.chord;
                 }
+
+                $out.send-note: 'track-1',
+                        $score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                        120, $next-beat-interval / 2,
+                        :at($delta + $next-beat-interval);
+
+                $out.send-note: 'track-1',
+                        $score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                        120, $next-beat-interval / 2,
+                        :at($delta + $next-beat-interval + ($next-beat-interval/2));
+
+                $out.send-note: 'track-2',
+                    $score-state.map-onto-pitch($score-state.pitch-layer[2].vector.head).head - 12,
+                    80, $next-beat-interval * 2,
+                    :at($delta + $next-beat-interval)
+                    if $is-on-beat;
+
                 # my $quaver-count = floor($event-window[0] / 0.5) * 0.5;
                 # if $quaver-count >= $event-window[0] and $quaver-count = $event-window[1] {
                 #     say "Accepted $quaver-count with window of { $event-window.perl }";
@@ -252,7 +290,11 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
             await Promise.at($delta)
         }
 
-        # Move forward one second
-        $delta += chunk-size;
+        # Move forward one beat
+        $delta += $next-beat-interval;
+        $current-beat += 1;
     }
+
+    # End generation thread
+    $continue-generation.keep;
 }
