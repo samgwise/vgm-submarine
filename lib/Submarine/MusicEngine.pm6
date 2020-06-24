@@ -34,6 +34,7 @@ constant lively = sv(0, 0.35);
 
 # Time signiture
 constant common-time = sv(0, 2, 4, 6);
+constant common-time-half-speed = sv(0, 4, 8, 12);
 
 our class ScoreEvent {
     has Numeric $.delta = 0;
@@ -119,49 +120,6 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
 
     my $current-beat = 0;
 
-    my Promise $continue-generation .= new;
-
-    # # Generation thread
-    # start {
-    #     CATCH { default { warn .gist } }
-    #     signal(SIGINT).tap( { $continue-generation.break('SIGTERM received') } );
-    #     my $generation-delta = $delta;
-    #     my $beat-counter = 0;
-    #     for 0..Inf {
-    #         my $start-generation = now;
-    #         # Check for stop state
-    #         last unless $continue-generation.status ~~ Planned;
-    #         # Schedule
-    #         if is-playing() == 1 {
-    #             await Promise.at($generation-delta).then: {
-    #                 my $beat = $score-state.map-into-rhythmn($generation-delta - $score-epoch).head + 1;
-    #                 $score-state.queue: $beat,
-    #                     ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
-    #                     120,
-    #                     0.5);
-
-    #                 $score-state.queue: $beat + 0.5,
-    #                     ($score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
-    #                     120,
-    #                     0.5);
-    #             }
-    #             # Offset by the next interval
-    #             $generation-delta +=
-    #                 [-] $score-state.map-onto-rhythmn($beat-counter + 1, $beat-counter);
-    #             $beat-counter++;
-    #         }
-    #         else {
-    #             await Promise.at($generation-delta);
-    #             # Offset by the previous interval
-    #             $generation-delta +=
-    #                 [-] $score-state.map-onto-rhythmn($beat-counter, $beat-counter - 1);
-    #         }
-
-    #         say "Generation pass finished in {now - $start-generation}";
-
-    #     }
-    # }
-
     # Scheduling and event handler loop
     for 0..Inf {
         #
@@ -183,22 +141,27 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     when Environment::SafeReef {
                         $score-state.pitch-layer[1] = safe-reef-scale;
                         $score-state.rhythmn-layer[0] = relaxed;
+                        $score-state.rhythmn-layer[2] = common-time;
                     }
                     when Environment::DropOff {
                         $score-state.pitch-layer[1] = drop-off-scale;
                         $score-state.rhythmn-layer[0] = slow;
+                        $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     when Environment::Kelp {
                         $score-state.pitch-layer[1] = kelp-scale;
                         $score-state.rhythmn-layer[0] = lively;
+                        $score-state.rhythmn-layer[2] = common-time;
                     }
                     when Environment::RedWeed {
                         $score-state.pitch-layer[1] = redweed-scale;
                         $score-state.rhythmn-layer[0] = nuetral;
+                        $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     when Environment::DropPod {
                         $score-state.pitch-layer[1] = drop-pod-scale;
                         $score-state.rhythmn-layer[0] = nuetral;
+                        $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     default {
                         say "Setting unhandled state { .perl } to chromatic";
@@ -230,20 +193,6 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
 
                 # After state checks, save the new state for next time
                 $last-score-state = $game-state;
-
-                # # Change beat or correct for the case when the beat moves backwards due to a change in counting
-                # if $current-beat < $event-window.head.floor + 1 or $current-beat > $event-window.head.floor + 1 {
-                #     say "{ $event-window.head }, $current-beat - {$current-beat mod $bar-length} of $bar-length";
-                #     $current-beat = $event-window.head.floor + 1;
-
-                #     # Change Bar
-                #     if ($current-beat mod $bar-length) == 0 {
-                #         say "Changing chord";
-                #         $chord-progression-model .= pick-next;
-                #         $score-state.pitch-layer[2] = $chord-progression-model.chord
-                #     }
-
-                # }
 
                 my $beats-per-bar = $score-state.rhythmn-layer[2].scale-pv.elems;
                 my $beat-of-bar = $score-state.rhythmn-layer[2].reflexive-step($current-beat);
@@ -295,6 +244,4 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
         $current-beat += 1;
     }
 
-    # End generation thread
-    $continue-generation.keep;
 }
