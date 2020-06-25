@@ -111,12 +111,8 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my $last-score-state = CurrentState.new;
     my Int $scale-test = 0;
     my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
-    my $phrase-length = 8;
-    my $bar-length = 4;
-    # my $chord-plan = do gather for 0..^$phrase-length {
-    #     take ($chord-progression-model.value, $chord-progression-model) for 0..^$bar-length;
-    #     $chord-progression-model .= pick-next;
-    # }
+    my $pitch-curve-model = Submarine::MusicEngine::Harmony::<$curve1>;
+    my Rat $phrase-length = 8.0;
 
     my $current-beat = 0;
 
@@ -197,12 +193,22 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 my $beats-per-bar = $score-state.rhythmn-layer[2].scale-pv.elems;
                 my $beat-of-bar = $score-state.rhythmn-layer[2].reflexive-step($current-beat);
                 my $is-on-beat = $beat-of-bar == $beat-of-bar.truncate;
+
                 # Start of bar actions
                 if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
                     say "Next chord";
                     $chord-progression-model .= pick-next;
                     $score-state.pitch-layer[2] = $chord-progression-model.chord;
+
+                    # Start of phrase actions
+                    if $beat-of-bar.floor % $phrase-length == 0 {
+                        $pitch-curve-model .= pick-next;
+                    }
                 }
+
+                my $beats-per-phrase = $beats-per-bar * $phrase-length;
+                my $contour = $pitch-curve-model.value.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase);
+                my $rounded-countour = $score-state.map-into-pitch(|$contour).map( *.floor );
 
                 $out.send-note: 'track-1',
                         $score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
@@ -215,23 +221,10 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         :at($delta + $next-beat-interval + ($next-beat-interval/2));
 
                 $out.send-note: 'track-2',
-                    $score-state.map-onto-pitch($score-state.pitch-layer[2].vector.head).head - 12,
+                    $score-state.map-onto-pitch($rounded-countour.tail).head + 36,
                     80, $next-beat-interval * 2,
                     :at($delta + $next-beat-interval)
                     if $is-on-beat;
-
-                # my $quaver-count = floor($event-window[0] / 0.5) * 0.5;
-                # if $quaver-count >= $event-window[0] and $quaver-count = $event-window[1] {
-                #     say "Accepted $quaver-count with window of { $event-window.perl }";
-                #     $out.send-note: 'track-1',
-                #         $score-state.map-onto-pitch(++$scale-test mod 12).head,
-                #         120,
-                #         0.5,
-                #         :at($delta + chunk-size + ([-] $score-state.map-onto-rhythmn($quaver-count, $event-window[0])));
-                # }
-                # else {
-                #     say "Ignored $quaver-count with window of { $event-window.perl }";
-                # }
 
             }
         }

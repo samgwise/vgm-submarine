@@ -17,6 +17,7 @@ constant dominant-seventh is export = sv(7, 9, 11, 13, 14);
 constant submediant is export = tonic.transpose(5);
 constant leading-tone is export = tonic.transpose(6);
 
+#! Markov model container for chord structures
 our class ChordNode does Submarine::MusicEngine::Markov::Node[ScaleVec] {
 
     #! A synonym for the generic $.values attribute
@@ -38,6 +39,7 @@ our $submediant = ChordNode.new( :value(subdominant) );
 # Tie chords together
 #
 
+# Helper sub for declaring Markov connections
 sub chord-vertex(ChordNode $from, ChordNode $to) {
     $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to)
 }
@@ -73,3 +75,60 @@ chord-vertex($submediant, $subdominant);
 chord-vertex($submediant, $supertonic);
 chord-vertex($submediant, $dominant);
 chord-vertex($submediant, $dominant-seventh);
+
+#
+# Arrangment curve
+#
+
+#! Container class for curve parameters
+our class Curve {
+    use Math::Curves;
+
+    has Numeric @.curve-upper is rw = 0, 0;
+    has Numeric @.curve-lower is rw = -12, -12;
+
+    #! select a pair of pitch bounds from a context given a transition
+    method contour($t) {
+        sort bézier($t, @!curve-upper), bézier($t, @!curve-lower)
+    }
+}
+
+#! Factory sub for declaring curve pairs
+sub curve(@curve-upper, @curve-lower) {
+    Curve.new(:@curve-upper, :@curve-lower)
+}
+
+our constant curve1 = curve [0, 40, 30, 20], [-12, -5, -12, -5];
+our constant curve2 = curve [25, 30, 25, 20, 15], [-12, -24, -17];
+our constant curve3 = curve [10, 15, 30, 45, 30], [-17, -12, -17];
+our constant curve4 = curve [25, 30, 20, 7, 12], [-24, -17, -29];
+
+#! Markov model container for curve parameters
+our class CurveNode does Submarine::MusicEngine::Markov::Node[Curve] {
+
+}
+
+our $curve1 = CurveNode.new( :value(curve1) );
+our $curve2 = CurveNode.new( :value(curve2) );
+our $curve3 = CurveNode.new( :value(curve3) );
+our $curve4 = CurveNode.new( :value(curve4) );
+
+#! Helper sub for declaring Markov connections
+sub curve-vertex(CurveNode $from, CurveNode $to) {
+    $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to)
+}
+
+#
+# Tie curves together
+#
+curve-vertex($curve1, $curve2);
+curve-vertex($curve1, $curve4);
+
+curve-vertex($curve2, $curve3);
+curve-vertex($curve2, $curve1);
+
+curve-vertex($curve3, $curve4);
+curve-vertex($curve3, $curve2);
+
+curve-vertex($curve4, $curve1);
+curve-vertex($curve4, $curve3);
