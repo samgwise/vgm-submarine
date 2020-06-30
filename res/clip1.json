@@ -191,6 +191,16 @@
             "delta": 494.764
         },
         {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 509.002
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 511.067
+        },
+        {
             "path": "/EnvMods/Surface",
             "message": null,
             "delta": 511.067
@@ -199,6 +209,16 @@
             "path": "/EnvMods/Underwater",
             "message": null,
             "delta": 512.503
+        },
+        {
+            "path": "/GameState/Oxygen",
+            "message": null,
+            "delta": 548.038
+        },
+        {
+            "path": "/GameState/Safe",
+            "message": null,
+            "delta": 551.347
         },
         {
             "path": "/EnvMods/Surface",

@@ -113,6 +113,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
     my $pitch-curve-model = Submarine::MusicEngine::Harmony::<$curve1>;
     my Rat $phrase-length = 8.0;
+    my $iterations-since-chord-change = 0;
 
     my $current-beat = 0;
 
@@ -203,29 +204,32 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     # Start of phrase actions
                     if $beat-of-bar.floor % $phrase-length == 0 {
                         $pitch-curve-model .= pick-next;
+                        $iterations-since-chord-change = 0;
                     }
                 }
 
                 my $beats-per-phrase = $beats-per-bar * $phrase-length;
-                my $contour = $pitch-curve-model.value.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase);
-                my $rounded-countour = $score-state.map-into-pitch(|$contour).map( *.floor );
+                my $contour = $pitch-curve-model.value.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase).cache;
+                my $rounded-contour = $score-state.map-into-pitch(|$contour.map( { $_ + 60 })).map( *.floor ).cache;
+                say "Arragnement space: $rounded-contour";
 
                 $out.send-note: 'track-1',
-                        $score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                        12 + $score-state.map-onto-pitch(($rounded-contour.tail - ($iterations-since-chord-change * 2)) % $score-state.pitch-layer[2].scale-pv.elems).head,
                         120, $next-beat-interval / 2,
                         :at($delta + $next-beat-interval);
 
                 $out.send-note: 'track-1',
-                        $score-state.map-onto-pitch(++$scale-test mod $score-state.pitch-layer[2].repeat-interval).head,
+                        12 + $score-state.map-onto-pitch(($rounded-contour.tail - 1 - ($iterations-since-chord-change * 2)) % $score-state.pitch-layer[2].scale-pv.elems).head,
                         120, $next-beat-interval / 2,
                         :at($delta + $next-beat-interval + ($next-beat-interval/2));
 
                 $out.send-note: 'track-2',
-                    $score-state.map-onto-pitch($rounded-countour.tail).head + 36,
+                    $score-state.map-onto-pitch($rounded-contour.head).head + 12,
                     80, $next-beat-interval * 2,
                     :at($delta + $next-beat-interval)
                     if $is-on-beat;
 
+                $iterations-since-chord-change++;
             }
         }
         else {
