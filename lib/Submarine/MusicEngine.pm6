@@ -4,6 +4,7 @@ use ScaleVec;
 use Submarine::Types;
 use Submarine::NoteOut;
 use Submarine::MusicEngine::Harmony;
+use Submarine::MusicEngine::Rhythmn;
 
 #! ScaleVec declaration helper
 our sub sv(*@vector --> ScaleVec) {
@@ -112,6 +113,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my Int $scale-test = 0;
     my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
     my $pitch-curve-model = Submarine::MusicEngine::Harmony::<$curve1>;
+    my $bass-rythmn-model = Submarine::MusicEngine::Rhythmn::<$on-the-beat1>;
     my Rat $phrase-length = 8.0;
     my $iterations-since-chord-change = 0;
 
@@ -199,6 +201,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
                     say "Next chord";
                     $chord-progression-model .= pick-next;
+                    $bass-rythmn-model .= pick-next;
                     $score-state.pitch-layer[2] = $chord-progression-model.chord;
 
                     # Start of phrase actions
@@ -226,7 +229,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 $out.send-note: 'track-2',
                     $score-state.map-onto-pitch($rounded-contour.head).head + 12,
                     80, $next-beat-interval * 2,
-                    :at($delta + $next-beat-interval)
+                    :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($bass-rythmn-model.rhythmn.step($beat-of-bar) - $beat-of-bar).head)
                     if $is-on-beat;
 
                 $iterations-since-chord-change++;
