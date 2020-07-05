@@ -14,7 +14,7 @@ our class Pattern {
     #! Infinite cersion of the pattern
     method sequence($start = 0 --> Seq) {
         my $kernal-length = $!kernal.elems;
-        ($start.floor..Inf).map( { $!kernal[$_ mod $kernal-length] * ($_ / $kernal-length).floor } )
+        ($start.floor..Inf).map( { $!kernal[$_ mod $kernal-length] + ($kernal-length * ($_ / $kernal-length).floor) } )
     }
 
     #! returns sub sequence of elements within a given range

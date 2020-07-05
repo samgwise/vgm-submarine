@@ -1,0 +1,21 @@
+#! /usr/bin/env perl6
+use v6.d;
+use Test;
+
+use ScaleVec;
+use Submarine::Utils;
+
+use-ok 'Submarine::MusicEngine::Rhythmn';
+use Submarine::MusicEngine::Rhythmn;
+
+#
+# Pattern class tests
+#
+
+my $pattern = Submarine::MusicEngine::Rhythmn::on-the-beat;
+
+is-deeply $pattern.sequence.head(8), Seq(0..7), "Sequence extends kernal pattern";
+
+is-deeply $pattern.sub-sequence(3, 7.5), Seq(3..7), "Sub-sequence of pattern sequence generator";
+
+done-testing

@@ -1,0 +1,4 @@
+Set arp pattern to exist below the curve note. - done
+Asses phrase closure and consider parametric approach to shape chord selection.
+Develop expression shaping for arp pattern
+Add chord tiling pattern to facilitate voice leading 
