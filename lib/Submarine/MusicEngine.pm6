@@ -5,11 +5,7 @@ use Submarine::Types;
 use Submarine::NoteOut;
 use Submarine::MusicEngine::Harmony;
 use Submarine::MusicEngine::Rhythmn;
-
-#! ScaleVec declaration helper
-our sub sv(*@vector --> ScaleVec) {
-    ScaleVec.new(:@vector)
-}
+use Submarine::Utils;
 
 # Ionian
 constant base-scale = sv(0, 2, 4, 5, 7, 9, 11, 12);
@@ -69,9 +65,19 @@ our class ScoreState {
         eager reduce { $^b.reflexive-step($^a) }, $_, |@!pitch-layer for @values
     }
 
+    # Map two values into pitch structure and return the interval
+    method map-into-pitch-interval(Numeric $a, Numeric $b --> Numeric) {
+        [-] reduce { $^b.reflexive-step($^a) }, $_, |@!pitch-layer for $b, $a
+    }
+
     # Map values into rhythmn structure
     method map-into-rhythmn(+@values) {
         eager reduce { $^b.reflexive-step($^a) }, $_, |@!rhythmn-layer for @values
+    }
+
+    # Map two values into rhythmn structure and return the interval
+    method map-into-rhythmn-interval(Numeric $a, Numeric $b --> Numeric) {
+        [-] reduce { $^b.reflexive-step($^a) }, $_, |@!rhythmn-layer for $b, $a
     }
 
     # Map values onto pitch structure
@@ -79,9 +85,19 @@ our class ScoreState {
         eager reduce { $^b.step($^a) }, $_, |@!pitch-layer.reverse for @values
     }
 
+    # Map two values onto pitch structure and return the interval
+    method map-onto-pitch-interval(Numeric $a, Numeric $b --> Numeric) {
+        [-] reduce { $^b.step($^a) }, $_, |@!pitch-layer.reverse for $b, $a
+    }
+
     # Map values onto rhythmn structure
     method map-onto-rhythmn(+@values) {
         eager reduce { $^b.step($^a) }, $_, |@!rhythmn-layer.reverse for @values
+    }
+
+    # Map values onto rhythmn structure
+    method map-onto-rhythmn-interval(Numeric $a, Numeric $b --> Numeric) {
+        [-] reduce { $^b.step($^a) }, $_, |@!rhythmn-layer.reverse for $b, $a
     }
 
     # Calculate absolute interval in scale terms
@@ -113,7 +129,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my Int $scale-test = 0;
     my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
     my $pitch-curve-model = Submarine::MusicEngine::Harmony::<$curve1>;
-    my $bass-rythmn-model = Submarine::MusicEngine::Rhythmn::<$on-the-beat1>;
+    my $bass-rhythmn-model = Submarine::MusicEngine::Rhythmn::<$on-the-beat1>;
     my Rat $phrase-length = 8.0;
     my $iterations-since-chord-change = 0;
 
@@ -201,7 +217,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
                     say "Next chord";
                     $chord-progression-model .= pick-next;
-                    $bass-rythmn-model .= pick-next;
+                    $bass-rhythmn-model .= pick-next;
                     $score-state.pitch-layer[2] = $chord-progression-model.chord;
 
                     # Start of phrase actions
@@ -226,11 +242,12 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         120, $next-beat-interval / 2,
                         :at($delta + $next-beat-interval + ($next-beat-interval/2));
 
+                say "Scheduling for beat $beat-of-bar to {$beat-of-bar + $score-state.map-into-rhythmn($next-beat-interval).head} with steps { $bass-rhythmn-model.rhythmn.sub-sequence($beat-of-bar, $beat-of-bar + $score-state.map-into-rhythmn($next-beat-interval).head) }";
                 $out.send-note: 'track-2',
                     $score-state.map-onto-pitch($rounded-contour.head).head + 12,
                     80, $next-beat-interval * 2,
-                    :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($bass-rythmn-model.rhythmn.step($beat-of-bar) - $beat-of-bar).head)
-                    if $is-on-beat;
+                    :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($_ - $beat-of-bar).head)
+                    for $bass-rhythmn-model.rhythmn.sub-sequence($beat-of-bar, $beat-of-bar + $score-state.rhythmn-layer[2].reflexive-step(1)).map( { $_ % $beats-per-bar } );
 
                 $iterations-since-chord-change++;
             }

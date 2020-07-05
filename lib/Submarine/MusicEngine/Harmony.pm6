@@ -1,11 +1,7 @@
 unit module Submarine::MusicEngine::Harmony;
 use ScaleVec;
 use Submarine::MusicEngine::Markov;
-
-#! ScaleVec declaration helper
-our sub sv(*@vector --> ScaleVec) {
-    ScaleVec.new(:@vector)
-}
+use Submarine::Utils;
 
 # Chords
 constant tonic is export = sv(0, 2, 4, 7);
@@ -88,8 +84,8 @@ our class Curve {
     has Numeric @.curve-lower is rw = -12, -12;
 
     #! select a pair of pitch bounds from a context given a transition
-    method contour($t) {
-        sort bézier($t, @!curve-upper), bézier($t, @!curve-lower)
+    method contour(Numeric:D $t) {
+        sort bézier($t.Rat, @!curve-upper.List), bézier($t.Rat, @!curve-lower.List)
     }
 }
 

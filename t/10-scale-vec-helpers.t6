@@ -1,0 +1,17 @@
+#! /usr/bin/env perl6
+use v6.d;
+use Test;
+
+use ScaleVec;
+
+use-ok 'Submarine::Utils';
+use Submarine::Utils;
+
+#
+# defined-steps() tests
+#
+my $steps-test = sv 0..12;
+is-deeply defined-steps($steps-test, 0, 4), (0..3).Seq, "test defined steps at stat of range";
+is-deeply defined-steps($steps-test, 5, 8), (5..7).Seq, "test defined steps middle of range";
+
+done-testing
