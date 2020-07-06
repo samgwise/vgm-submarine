@@ -13,9 +13,13 @@ use Submarine::MusicEngine::Rhythmn;
 #
 
 my $pattern = Submarine::MusicEngine::Rhythmn::on-the-beat;
+my $quaver-pattern = Submarine::MusicEngine::Rhythmn::quaver-pulse;
 
-is-deeply $pattern.sequence.head(8), Seq(0..7), "Sequence extends kernal pattern";
+is-deeply $pattern.sequence.head(8), (0..7).map( *.Rat ), "Sequence extends kernal pattern";
 
-is-deeply $pattern.sub-sequence(3, 7.5), Seq(3..7), "Sub-sequence of pattern sequence generator";
+is-deeply $pattern.sub-sequence(3, 7.5), (3..7).map( *.Rat ), "Sub-sequence of pattern sequence generator";
+
+is-deeply $quaver-pattern.sequence(3).head(7), (3, 3.5, 4, 4.5, 5, 5.5, 6).map( *.Rat ), "Sequence of quaver pattern generator";
+is-deeply $quaver-pattern.sub-sequence(3, 6.5), (3, 3.5, 4, 4.5, 5, 5.5, 6).map( *.Rat ), "Sub-sequence of quaver pattern sequence generator";
 
 done-testing
