@@ -2,3 +2,5 @@
 .lock
 *.exe
 midi_sender.toml
+*.iml
+.idea

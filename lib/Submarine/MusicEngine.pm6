@@ -15,7 +15,7 @@ constant safe-reef-scale = sv(2, 4, 5, 7, 9, 11, 12, 14);
 constant drop-pod-scale = sv(5, 7, 9, 11, 12, 14, 16, 17);
 # mixolydian
 constant kelp-scale = sv(7, 9, 11, 12, 14, 16, 17, 19);
-# Aolian
+# Aeolian
 constant drop-off-scale = sv(9, 11, 12, 14, 16, 17, 19, 21);
 # major-minor
 constant redweed-scale = sv(0, 2, 4, 5, 7, 8, 10, 12);
@@ -29,7 +29,7 @@ constant nuetral = sv(0, 0.5);
 constant relaxed = sv(0, 0.4);
 constant lively = sv(0, 0.35);
 
-# Time signiture
+# Time signature
 constant common-time = sv(0, 2, 4, 6);
 constant common-time-half-speed = sv(0, 4, 8, 12);
 
@@ -217,16 +217,20 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 # Start of bar actions
                 if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
                     say "Next chord";
-                    $chord-progression-model .= pick-next;
-                    $bass-rhythmn-model .= pick-next($beat-of-bar.floor % $phrase-length);
-                    $arp-rhythmn-model .= pick-next($beat-of-bar.floor % $phrase-length);
+                    $chord-progression-model .= pick-next($beat-of-bar.floor % $phrase-length);
+                    $iterations-since-chord-change = 0;
+
+                    $bass-rhythmn-model .= pick-next($beat-of-bar.floor % ($phrase-length * $beats-per-bar));
+                    $arp-rhythmn-model .= pick-next($beat-of-bar.floor % ($phrase-length * $beats-per-bar));
                     $score-state.pitch-layer[2] = $chord-progression-model.chord;
 
                     # Start of phrase actions
                     if $beat-of-bar.floor % $phrase-length == 0 {
                         $pitch-curve-model .= pick-next;
-                        $iterations-since-chord-change = 0;
                     }
+                }
+                else {
+                    $iterations-since-chord-change++;
                 }
 
                 my $beats-per-phrase = $beats-per-bar * $phrase-length;
@@ -253,8 +257,6 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         80, $next-beat-interval * 2,
                         :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($_ - $beat-of-bar).head)
                     for $bass-rhythmn-model.rhythmn.sub-sequence($beat-window-start, $beat-window-end);
-
-                $iterations-since-chord-change++;
             }
         }
         else {

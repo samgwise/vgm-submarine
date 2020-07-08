@@ -11,7 +11,7 @@ our class Pattern {
         $.kernal.repeat-interval
     }
 
-    #! Infinite cersion of the pattern
+    #! Infinite version of the pattern
     method sequence($start = 0 --> Seq) {
         ($!kernal.reflexive-step($start).floor.Int .. Inf).map( { $!kernal.step: $_ } )
     }
@@ -47,14 +47,18 @@ our class RhythmnNode does Submarine::MusicEngine::Markov::Node[Pattern] {
     }
 }
 
+#
 # Create RhythmnNode wrappers
+#
+
+# Bass nodes
 our $on-the-beat1 = RhythmnNode.new( :value(on-the-beat) );
 our $on-the-beat2 = RhythmnNode.new( :value(on-the-beat) );
 our $on-the-beat3 = RhythmnNode.new( :value(on-the-beat) );
 our $off-the-beat = RhythmnNode.new( :value(off-the-beat) );
 our $fast-bass = RhythmnNode.new( :value(quaver-pulse) );
 
-# Arp wrappers
+# Arp nodes
 our $pause = RhythmnNode.new( :value(hold) );
 our $crotchet-pulse = RhythmnNode.new( :value(on-the-beat) );
 our $three-four = RhythmnNode.new( :value(minum-triplet) );
@@ -70,7 +74,7 @@ sub rhythmn-vertex(RhythmnNode $from, RhythmnNode $to, :&probability = { 1.0 }) 
     $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to)
 }
 
-my &end-of-phrase = -> $beat-of-phrase { ($beat-of-phrase < 12) ?? 0.0 !! 10.0 }
+my &end-of-phrase = -> $beat-of-phrase { ($beat-of-phrase < 28) ?? 0.0 !! 10.0 }
 
 # Bass network
 rhythmn-vertex($on-the-beat1, $on-the-beat2);

@@ -36,30 +36,32 @@ our $submediant = ChordNode.new( :value(subdominant) );
 #
 
 # Helper sub for declaring Markov connections
-sub chord-vertex(ChordNode $from, ChordNode $to) {
+sub chord-vertex(ChordNode $from, ChordNode $to, :&probability = { 1.0 }) {
     $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to)
 }
+
+my &end-of-phrase = -> $beat-of-phrase { ($beat-of-phrase/ 32) * 4 }
 
 # Tonic
 chord-vertex($tonic, $submediant);
 chord-vertex($tonic, $subdominant);
 chord-vertex($tonic, $supertonic);
-chord-vertex($tonic, $dominant);
-chord-vertex($tonic, $dominant-seventh);
+chord-vertex($tonic, $dominant, :probability(&end-of-phrase));
+chord-vertex($tonic, $dominant-seventh, :probability(&end-of-phrase));
 
 # Supertonic
 chord-vertex($supertonic, $dominant);
-chord-vertex($supertonic, $dominant-seventh);
+chord-vertex($supertonic, $dominant-seventh, :probability(&end-of-phrase));
 
 # Subdominant
-chord-vertex($subdominant, $dominant);
-chord-vertex($subdominant, $dominant-seventh);
+chord-vertex($subdominant, $dominant, :probability(&end-of-phrase));
+chord-vertex($subdominant, $dominant-seventh, :probability(&end-of-phrase));
 chord-vertex($subdominant, $supertonic);
 chord-vertex($subdominant, $tonic);
 
 # Dominant
 chord-vertex($dominant, $tonic);
-chord-vertex($dominant, $dominant-seventh);
+chord-vertex($dominant, $dominant-seventh, :probability(&end-of-phrase));
 chord-vertex($dominant, $submediant);
 
 # Dominant 7th
@@ -69,8 +71,8 @@ chord-vertex($dominant-seventh, $tonic);
 chord-vertex($submediant, $tonic);
 chord-vertex($submediant, $subdominant);
 chord-vertex($submediant, $supertonic);
-chord-vertex($submediant, $dominant);
-chord-vertex($submediant, $dominant-seventh);
+chord-vertex($submediant, $dominant, :probability(&end-of-phrase));
+chord-vertex($submediant, $dominant-seventh, :probability(&end-of-phrase));
 
 #
 # Arrangment curve
