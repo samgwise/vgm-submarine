@@ -41,6 +41,7 @@ our class ScoreEvent {
 our class ScoreState {
     has ScaleVec @.pitch-layer = [chromatic.transpose(60), chromatic, tonic];
     has ScaleVec @.rhythmn-layer = nuetral, nuetral, common-time;
+    has Submarine::MusicEngine::Harmony::ChordNode @.chord-plan = [Submarine::MusicEngine::Harmony::<$tonic>];
 
     has ScoreEvent @!event-queue;
     has ScoreEvent @!unsorted-events;
@@ -116,6 +117,16 @@ our class ScoreState {
     # Map values onto rhythmn structure
     method map-onto-tempo(+@values) {
         eager reduce { $^b.step($^a) }, $_, |@!rhythmn-layer[0..1].reverse for @values
+    }
+
+    # Generates a new chord plan extending from where the current plan ends.
+    method plan-chords(Numeric $bars, $bar-length, Positional $environment --> Seq) {
+        my $last-chord = @!chord-plan.tail // Submarine::MusicEngine::Harmony::<$tonic>;
+        gather for 0..^($bars * $bar-length) {
+            $last-chord .= pick-next(|$environment);
+            take |($last-chord xx $last-chord.beats.($bar-length));
+            say "took: $last-chord xx { $last-chord.beats.($bar-length) } chords";
+        }
     }
 }
 
@@ -217,11 +228,16 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 # Start of bar actions
                 if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
                     say "Next chord";
-                    $chord-progression-model .= pick-next($beat-of-bar.floor % $phrase-length);
+                    # $chord-progression-model .= pick-next($beat-of-bar.floor % $phrase-length);
+
+                    my List $model-env = List($beat-of-bar.floor % ($phrase-length * $beats-per-bar));
+
+                    $score-state.chord-plan.append: $score-state.plan-chords(1, $beats-per-bar, $model-env).flat;
+
                     $iterations-since-chord-change = 0;
 
-                    $bass-rhythmn-model .= pick-next($beat-of-bar.floor % ($phrase-length * $beats-per-bar));
-                    $arp-rhythmn-model .= pick-next($beat-of-bar.floor % ($phrase-length * $beats-per-bar));
+                    $bass-rhythmn-model .= pick-next(|$model-env);
+                    $arp-rhythmn-model .= pick-next(|$model-env);
                     $score-state.pitch-layer[2] = $chord-progression-model.chord;
 
                     # Start of phrase actions
@@ -231,6 +247,12 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 }
                 else {
                     $iterations-since-chord-change++;
+                }
+
+                # On Beat actions
+                if $is-on-beat {
+                    # Move the chord plan forward if there are more beats planned
+                    $chord-progression-model = $_ with $score-state.chord-plan.pop;
                 }
 
                 my $beats-per-phrase = $beats-per-bar * $phrase-length;

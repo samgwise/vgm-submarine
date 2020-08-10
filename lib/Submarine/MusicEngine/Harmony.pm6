@@ -5,10 +5,14 @@ use Submarine::Utils;
 
 # Chords
 constant tonic is export = sv(0, 2, 4, 7);
+constant tonic-sus4 is export = sv(0, 3, 4, 7);
+constant tonic-sus2 is export = sv(0, 1, 2, 4, 7);
 constant supertonic is export = tonic.transpose(1);
 constant mediant is export = tonic.transpose(2);
 constant subdominant is export = tonic.transpose(3);
 constant dominant is export = tonic.transpose(4);
+constant dominant-sus4 is export = tonic-sus4.transpose(4);
+constant dominant-sus2 is export = tonic-sus2.transpose(4);
 constant dominant-seventh is export = sv(7, 9, 11, 13, 14);
 constant submediant is export = tonic.transpose(5);
 constant leading-tone is export = tonic.transpose(6);
@@ -16,15 +20,24 @@ constant leading-tone is export = tonic.transpose(6);
 #! Markov model container for chord structures
 our class ChordNode does Submarine::MusicEngine::Markov::Node[ScaleVec] {
 
+    has &.beats = sub (Numeric $bar-length) {
+        $bar-length
+    }
+
     #! A synonym for the generic $.values attribute
     method chord() {
         $!value
     }
 }
 
+# Half bar functions for distributing durations of even and odd bar lengths
+my &half-bar-start = -> Numeric $bar-length { floor($bar-length / 2) }
+my &half-bar-end = -> Numeric $bar-length { ceiling($bar-length / 2) }
 
 # Create ChordNode wrappers
 our $tonic = ChordNode.new( :value(tonic) );
+our $tonic-sus4 = ChordNode.new( :value(tonic-sus4), :beats(&half-bar-start) );
+our $tonic-resolution = ChordNode.new( :value(tonic), :beats(&half-bar-end) );
 our $supertonic = ChordNode.new( :value(supertonic) );
 our $subdominant = ChordNode.new( :value(subdominant) );
 our $dominant = ChordNode.new( :value(dominant) );
@@ -49,6 +62,16 @@ chord-vertex($tonic, $supertonic);
 chord-vertex($tonic, $dominant, :probability(&end-of-phrase));
 chord-vertex($tonic, $dominant-seventh, :probability(&end-of-phrase));
 
+# Tonic Resolution
+chord-vertex($tonic-resolution, $submediant);
+chord-vertex($tonic-resolution, $subdominant);
+chord-vertex($tonic-resolution, $supertonic);
+chord-vertex($tonic-resolution, $dominant, :probability(&end-of-phrase));
+chord-vertex($tonic-resolution, $dominant-seventh, :probability(&end-of-phrase));
+
+# Tonic-sus-4
+chord-vertex($tonic-sus4, $tonic-resolution);
+
 # Supertonic
 chord-vertex($supertonic, $dominant);
 chord-vertex($supertonic, $dominant-seventh, :probability(&end-of-phrase));
@@ -58,6 +81,7 @@ chord-vertex($subdominant, $dominant, :probability(&end-of-phrase));
 chord-vertex($subdominant, $dominant-seventh, :probability(&end-of-phrase));
 chord-vertex($subdominant, $supertonic);
 chord-vertex($subdominant, $tonic);
+chord-vertex($subdominant, $tonic-sus4);
 
 # Dominant
 chord-vertex($dominant, $tonic);
@@ -66,6 +90,7 @@ chord-vertex($dominant, $submediant);
 
 # Dominant 7th
 chord-vertex($dominant-seventh, $tonic);
+chord-vertex($dominant, $tonic-sus4);
 
 # Submediant
 chord-vertex($submediant, $tonic);
