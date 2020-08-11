@@ -128,6 +128,17 @@ our class ScoreState {
             say "took: $last-chord xx { $last-chord.beats.($bar-length) } chords";
         }
     }
+
+    #! determine the tonicised transposition of the scale space given two chords
+    method tonicise-scale-distance(ScaleVec $a, ScaleVec $b --> Numeric) {
+        my $octave = @!pitch-layer.head.repeat-interval;
+        given (5 - ([-] self.map-onto-scale($b.root, $a.root))) % $octave {
+            when abs(@!pitch-layer[*-2].root + $_) > abs(@!pitch-layer[*-2].root + ($_ - $octave)) {
+                $_ - $octave
+            }
+            default { $_ }
+        }
+    }
 }
 
 our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is-playing) is export
@@ -166,27 +177,27 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         # No change
                     }
                     when Environment::SafeReef {
-                        $score-state.pitch-layer[1] = safe-reef-scale;
+                        $score-state.pitch-layer[1] = safe-reef-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], tonic);
                         $score-state.rhythmn-layer[0] = relaxed;
                         $score-state.rhythmn-layer[2] = common-time;
                     }
                     when Environment::DropOff {
-                        $score-state.pitch-layer[1] = drop-off-scale;
+                        $score-state.pitch-layer[1] = drop-off-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], tonic);
                         $score-state.rhythmn-layer[0] = slow;
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     when Environment::Kelp {
-                        $score-state.pitch-layer[1] = kelp-scale;
+                        $score-state.pitch-layer[1] = kelp-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], tonic);
                         $score-state.rhythmn-layer[0] = lively;
                         $score-state.rhythmn-layer[2] = common-time;
                     }
                     when Environment::RedWeed {
-                        $score-state.pitch-layer[1] = redweed-scale;
+                        $score-state.pitch-layer[1] = redweed-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], tonic);
                         $score-state.rhythmn-layer[0] = nuetral;
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     when Environment::DropPod {
-                        $score-state.pitch-layer[1] = drop-pod-scale;
+                        $score-state.pitch-layer[1] = drop-pod-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], tonic);
                         $score-state.rhythmn-layer[0] = nuetral;
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
