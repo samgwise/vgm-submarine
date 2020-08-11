@@ -21,7 +21,7 @@ constant drop-off-scale = sv(9, 11, 12, 14, 16, 17, 19, 21);
 constant redweed-scale = sv(0, 2, 4, 5, 7, 8, 10, 12);
 
 # Default
-constant chromatic = sv(1..12);
+constant chromatic = sv(0..12);
 
 # Tempo scales
 constant slow = sv(0, 0.6);
@@ -279,6 +279,12 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         80, $next-beat-interval * 2,
                         :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($_ - $beat-of-bar).head)
                     for $bass-rhythmn-model.rhythmn.sub-sequence($beat-window-start, $beat-window-end);
+
+                # Send curve values for logging
+                $out.send-note: 'track-14',
+                    $_, 100, $next-beat-interval,
+                    :at($delta + $next-beat-interval)
+                for $score-state.map-onto-pitch(|$rounded-contour);
             }
         }
         else {
