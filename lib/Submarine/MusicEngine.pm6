@@ -151,6 +151,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my Int $scale-test = 0;
     my $chord-progression-model = Submarine::MusicEngine::Harmony::<$tonic>;
     my $pitch-curve-model = Submarine::MusicEngine::Harmony::<$curve1>;
+    my $pitch-curve = $pitch-curve-model.value;
     my $bass-rhythmn-model = Submarine::MusicEngine::Rhythmn::<$on-the-beat1>;
     my $arp-rhythmn-model = Submarine::MusicEngine::Rhythmn::<$quaver-pulse>;
     my Rat $phrase-length = 8.0;
@@ -254,6 +255,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     # Start of phrase actions
                     if $beat-of-bar.floor % $phrase-length == 0 {
                         $pitch-curve-model .= pick-next;
+                        $pitch-curve = $pitch-curve-model.value.extend-from($pitch-curve);
                     }
                 }
                 else {
@@ -267,7 +269,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 }
 
                 my $beats-per-phrase = $beats-per-bar * $phrase-length;
-                my $contour = $pitch-curve-model.value.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase).cache;
+                my $contour = $pitch-curve.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase).cache;
                 my $rounded-contour = $score-state.map-into-pitch(|$contour.map( { $_ + 60 })).map( *.floor ).cache;
                 my ($beat-window-start, $beat-window-end) = (
                     $beat-of-bar,

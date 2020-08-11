@@ -114,6 +114,14 @@ our class Curve {
     method contour(Numeric:D $t) {
         sort bézier($t.Rat, @!curve-upper.List), bézier($t.Rat, @!curve-lower.List)
     }
+
+    #! Extends this curve from the end of another curve
+    method extend-from(Curve $previous --> Curve) {
+        Curve.new(
+            :curve-upper($previous.curve-upper.tail, |@!curve-upper)
+            :curve-lower($previous.curve-lower.tail, |@!curve-lower)
+        )
+    }
 }
 
 #! Factory sub for declaring curve pairs
