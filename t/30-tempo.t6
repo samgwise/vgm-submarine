@@ -1,0 +1,18 @@
+#! /usr/bin/env perl6
+use v6.d;
+use Test;
+
+use ScaleVec;
+use Submarine::Utils;
+
+use-ok 'Submarine::MusicEngine::Tempo';
+use Submarine::MusicEngine::Tempo;
+
+my $lerp = sv-lerp(sv(0, 1), sv(0, 2), 0, 4);
+
+is-deeply $lerp.update-lerp(0).scale-pv, (0, 1), "Start of lerp is starting ScaleVec";
+is-deeply $lerp.update-lerp(2).scale-pv, (0.0, 1.5), "mid point of of lerp is lerped version of ScaleVec";
+is-deeply $lerp.update-lerp(4).scale-pv, (0.0, 2.0), "End of of lerp is ending ScaleVec";
+is-deeply $lerp.update-lerp(5).scale-pv, (0.0, 2.0), "Post end of of lerp is ending ScaleVec";
+
+done-testing
