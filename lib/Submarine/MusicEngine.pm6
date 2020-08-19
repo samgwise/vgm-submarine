@@ -157,8 +157,8 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my $arp-rhythmn-model = Submarine::MusicEngine::Rhythmn::<$quaver-pulse>;
     my Rat $phrase-length = 8.0;
     my $iterations-since-chord-change = 0;
-    my $tempo-modulation-lerp = sv-lerp($score-state.rhythmn-layer[1], $score-state.rhythmn-layer[1], 0, 0);
-    my $tempo-lerp = sv-lerp($score-state.rhythmn-layer[0], $score-state.rhythmn-layer[0], 0, 0);
+    my $tempo-modulation-lerp = sv-lerp($score-state.rhythmn-layer[1], $score-state.rhythmn-layer[1], 0, 1);
+    my $tempo-lerp = sv-lerp($score-state.rhythmn-layer[0], $score-state.rhythmn-layer[0], 0, 1);
 
     my $current-beat = 0;
 
@@ -183,31 +183,31 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     when Environment::SafeReef {
                         $score-state.pitch-layer[1] = safe-reef-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], safe-reef-scale);
                         #$score-state.rhythmn-layer[0] = relaxed;
-                        $tempo-lerp .= for-target(relaxed, $current-beat, $current-beat + 8);
+                        $tempo-lerp .= for-target(relaxed, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time;
                     }
                     when Environment::DropOff {
                         $score-state.pitch-layer[1] = drop-off-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], drop-off-scale);
                         #$score-state.rhythmn-layer[0] = slow;
-                        $tempo-lerp .= for-target(slow, $current-beat, $current-beat + 8);
+                        $tempo-lerp .= for-target(slow, $current-beat, 1/96);
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     when Environment::Kelp {
                         $score-state.pitch-layer[1] = kelp-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], kelp-scale);
                         #$score-state.rhythmn-layer[0] = lively;
-                        $tempo-lerp .= for-target(lively, $current-beat, $current-beat + 8);
+                        $tempo-lerp .= for-target(lively, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time;
                     }
                     when Environment::RedWeed {
                         $score-state.pitch-layer[1] = redweed-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], redweed-scale);
                         #$score-state.rhythmn-layer[0] = nuetral;
-                        $tempo-lerp .= for-target(nuetral, $current-beat, $current-beat + 8);
+                        $tempo-lerp .= for-target(nuetral, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     when Environment::DropPod {
                         $score-state.pitch-layer[1] = drop-pod-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], drop-pod-scale);
                         #$score-state.rhythmn-layer[0] = nuetral;
-                        $tempo-lerp .= for-target(nuetral, $current-beat, $current-beat + 8);
+                        $tempo-lerp .= for-target(nuetral, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
                     }
                     default {
@@ -223,19 +223,19 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     }
                     when * ~~ GameState::Safe {
                         #$score-state.rhythmn-layer[1] = nuetral
-                        $tempo-modulation-lerp .= for-target(nuetral, $current-beat, $current-beat + 4)
+                        $tempo-modulation-lerp .= for-target(nuetral, $current-beat, 1/96)
                     }
                     when GameState::Oxygen {
                         #$score-state.rhythmn-layer[1] = lively
-                        $tempo-modulation-lerp .= for-target(lively, $current-beat, $current-beat + 4)
+                        $tempo-modulation-lerp .= for-target(lively, $current-beat, 1/48)
                     }
                     when GameState::Damaged {
                         #$score-state.rhythmn-layer[1] = slow
-                        $tempo-modulation-lerp .= for-target(slow, $current-beat, $current-beat + 4)
+                        $tempo-modulation-lerp .= for-target(slow, $current-beat, 1/24)
                     }
                     when GameState::Danger {
                         #$score-state.rhythmn-layer[1] = lively
-                        $tempo-modulation-lerp .= for-target(lively, $current-beat, $current-beat + 4)
+                        $tempo-modulation-lerp .= for-target(lively, $current-beat, 1/24)
                     }
                     default {
                         say "Ignoreing unhandled state { .perl }";

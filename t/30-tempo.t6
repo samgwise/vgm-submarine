@@ -8,7 +8,10 @@ use Submarine::Utils;
 use-ok 'Submarine::MusicEngine::Tempo';
 use Submarine::MusicEngine::Tempo;
 
-my $lerp = sv-lerp(sv(0, 1), sv(0, 2), 0, 4);
+my $lerp = sv-lerp(sv(0, 1), sv(0, 2), 0, 1/4);
+
+is-approx $lerp.beat-start, 0, "Beat start set to 0";
+is-approx $lerp.beat-end, 4, "Beat end set to 4";
 
 is-deeply $lerp.update-lerp(0).scale-pv, (0, 1), "Start of lerp is starting ScaleVec";
 is-deeply $lerp.update-lerp(2).scale-pv, (0.0, 1.5), "mid point of of lerp is lerped version of ScaleVec";

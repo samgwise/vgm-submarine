@@ -9,10 +9,14 @@ our class SVLerp {
     has ScaleVec $.target is required;
 
     has Numeric $.beat-start is required;
-    has Numeric $.beat-end is required;
+    has Numeric $.change-increment is required;
+    has Numeric $.beat-end;
 
     submethod TWEAK() {
         $!current = $!beginning;
+        # Assuming the difference in the last values will be the largest.
+        my $interval = $!target.scale-pv.tail - $!beginning.scale-pv.tail;
+        $!beat-end = $!beat-start + ($interval.abs / $!change-increment);
     }
 
     method update-lerp(Numeric $current-beat) {
@@ -31,22 +35,22 @@ our class SVLerp {
     }
 
     # Returns a new lerp for the given target
-    method for-target(ScaleVec $target, Numeric $beat-start, Numeric $beat-end) {
+    method for-target(ScaleVec $target, Numeric $beat-start, Numeric $change-increment) {
         self.new(
             :beginning($!current)
             :$target
             :$beat-start
-            :$beat-end
+            :$change-increment
         )
     }
 }
 
 #! Factory function for SVLerp objects
-our sub sv-lerp(ScaleVec $beginning, ScaleVec $target, Numeric $beat-start, Numeric $beat-end) is export {
+our sub sv-lerp(ScaleVec $beginning, ScaleVec $target, Numeric $beat-start, Numeric $change-increment) is export {
 SVLerp.new(
     :$beginning
     :$target
     :$beat-start
-    :$beat-end
+    :$change-increment
     )
 }
