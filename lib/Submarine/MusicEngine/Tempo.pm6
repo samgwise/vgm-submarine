@@ -43,6 +43,7 @@ our class SVLerp {
             :$change-increment
         )
     }
+
 }
 
 #! Factory function for SVLerp objects

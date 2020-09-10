@@ -160,8 +160,8 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my $iterations-since-chord-change = 0;
     my $tempo-modulation-lerp = sv-lerp($score-state.rhythmn-layer[1], $score-state.rhythmn-layer[1], 0, 1);
     my $tempo-lerp = sv-lerp($score-state.rhythmn-layer[0], $score-state.rhythmn-layer[0], 0, 1);
-    my Numeric $dynamic-level = dynamic-p;
     my Numeric $dyanmic-modulation = 0.0;
+    my Submarine::MusicEngine::Dynamic::Lerp $dynamic-level .= new( :beginning(dynamic-p), :target(dynamic-p), :beat-start(1), :change-increment(1) );
 
     my $current-beat = 0;
 
@@ -188,35 +188,35 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         #$score-state.rhythmn-layer[0] = relaxed;
                         $tempo-lerp .= for-target(relaxed, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time;
-                        $dynamic-level = dynamic-mf;
+                        $dynamic-level .= for-target(dynamic-mf, $current-beat, 1/16);
                     }
                     when Environment::DropOff {
                         $score-state.pitch-layer[1] = drop-off-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], drop-off-scale);
                         #$score-state.rhythmn-layer[0] = slow;
                         $tempo-lerp .= for-target(slow, $current-beat, 1/96);
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
-                        $dynamic-level = dynamic-p;
+                        $dynamic-level .= for-target(dynamic-p, $current-beat, 1/24);
                     }
                     when Environment::Kelp {
                         $score-state.pitch-layer[1] = kelp-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], kelp-scale);
                         #$score-state.rhythmn-layer[0] = lively;
                         $tempo-lerp .= for-target(lively, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time;
-                        $dynamic-level = dynamic-mp;
+                        $dynamic-level .= for-target(dynamic-mf, $current-beat, 1/16);
                     }
                     when Environment::RedWeed {
                         $score-state.pitch-layer[1] = redweed-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], redweed-scale);
                         #$score-state.rhythmn-layer[0] = nuetral;
                         $tempo-lerp .= for-target(nuetral, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
-                        $dynamic-level = dynamic-mp;
+                        $dynamic-level .= for-target(dynamic-mp, $current-beat, 1/16);
                     }
                     when Environment::DropPod {
                         $score-state.pitch-layer[1] = drop-pod-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], drop-pod-scale);
                         #$score-state.rhythmn-layer[0] = nuetral;
                         $tempo-lerp .= for-target(nuetral, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time-half-speed;
-                        $dynamic-level = dynamic-mp;
+                        $dynamic-level .= for-target(dynamic-mp, $current-beat, 1/16);
                     }
                     default {
                         say "Setting unhandled state { .perl } to chromatic";
@@ -232,22 +232,26 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     when * ~~ GameState::Safe {
                         #$score-state.rhythmn-layer[1] = nuetral
                         $tempo-modulation-lerp .= for-target(nuetral, $current-beat, 1/96);
-                        $dyanmic-modulation = 0.0;
+                        $dyanmic-modulation = 1.0;
+                        $dynamic-level .= for-modulation([$dyanmic-modulation], $current-beat, 1/12);
                     }
                     when GameState::Oxygen {
                         #$score-state.rhythmn-layer[1] = lively
                         $tempo-modulation-lerp .= for-target(lively, $current-beat, 1/48);
                         $dyanmic-modulation = 1.3;
+                        $dynamic-level .= for-modulation([$dyanmic-modulation], $current-beat, 1/12);
                     }
                     when GameState::Damaged {
                         #$score-state.rhythmn-layer[1] = slow
                         $tempo-modulation-lerp .= for-target(slow, $current-beat, 1/24);
                         $dyanmic-modulation = 0.8;
+                        $dynamic-level .= for-modulation([$dyanmic-modulation], $current-beat, 1/6);
                     }
                     when GameState::Danger {
                         #$score-state.rhythmn-layer[1] = lively
                         $tempo-modulation-lerp .= for-target(lively, $current-beat, 1/24);
                         $dyanmic-modulation = 1.5;
+                        $dynamic-level .= for-modulation([$dyanmic-modulation], $current-beat, 1/6);
                     }
                     default {
                         say "Ignoreing unhandled state { .perl }";
@@ -265,6 +269,8 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 my $beats-per-bar = $score-state.rhythmn-layer[2].scale-pv.elems;
                 my $beat-of-bar = $score-state.rhythmn-layer[2].reflexive-step($current-beat);
                 my $is-on-beat = $beat-of-bar == $beat-of-bar.truncate;
+
+                $dynamic-level.update-lerp($current-beat);
                 my $velocity = 80;
 
                 # Start of bar actions
@@ -282,7 +288,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     $arp-rhythmn-model .= pick-next(|$model-env);
                     $score-state.pitch-layer[2] = $chord-progression-model.chord;
 
-                    $velocity = dynamic-strong.map-onto($dynamic-level);
+                    $velocity = dynamic-strong.step($dynamic-level.current);
 
                     # Start of phrase actions
                     if $beat-of-bar.floor % $phrase-length == 0 {
@@ -292,7 +298,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 }
                 else {
                     $iterations-since-chord-change++;
-                    $velocity = dynamic-weak.map-onto($dynamic-level);
+                    $velocity = dynamic-weak.step($dynamic-level.current);
                 }
 
                 # On Beat actions
