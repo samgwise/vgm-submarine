@@ -7,6 +7,7 @@ use Submarine::MusicEngine::Harmony;
 use Submarine::MusicEngine::Rhythmn;
 use Submarine::MusicEngine::Tempo;
 use Submarine::MusicEngine::Dynamic;
+use Submarine::MusicEngine::Form;
 use Submarine::Utils;
 
 # Ionian
@@ -156,7 +157,10 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
     my $pitch-curve = $pitch-curve-model.value;
     my $bass-rhythmn-model = Submarine::MusicEngine::Rhythmn::<$on-the-beat1>;
     my $arp-rhythmn-model = Submarine::MusicEngine::Rhythmn::<$quaver-pulse>;
+    my $form-model = Submarine::MusicEngine::Form::<$high-mod>;
+    my $form-curve = $form-model.value;
     my Rat $phrase-length = 8.0;
+    my Rat $form-length = $phrase-length * 4;
     my $iterations-since-chord-change = 0;
     my $tempo-modulation-lerp = sv-lerp($score-state.rhythmn-layer[1], $score-state.rhythmn-layer[1], 0, 1);
     my $tempo-lerp = sv-lerp($score-state.rhythmn-layer[0], $score-state.rhythmn-layer[0], 0, 1);
@@ -267,6 +271,9 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 $score-state.rhythmn-layer[0] = $tempo-lerp.update-lerp($current-beat);
 
                 my $beats-per-bar = $score-state.rhythmn-layer[2].scale-pv.elems;
+                my $beats-per-phrase = $beats-per-bar * $phrase-length;
+                my $beats-per-form = $beats-per-bar * $form-length;
+
                 my $beat-of-bar = $score-state.rhythmn-layer[2].reflexive-step($current-beat);
                 my $is-on-beat = $beat-of-bar == $beat-of-bar.truncate;
 
@@ -291,9 +298,15 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     $velocity = dynamic-strong.step($dynamic-level.current);
 
                     # Start of phrase actions
-                    if $beat-of-bar.floor % $phrase-length == 0 {
+                    if $current-beat.floor % $beats-per-phrase == 0 {
                         $pitch-curve-model .= pick-next;
                         $pitch-curve = $pitch-curve-model.value.extend-from($pitch-curve);
+                    }
+
+                    # Start of form actions
+                    if $current-beat.floor % $beats-per-form == 0 {
+                        $form-model .= pick-next;
+                        $form-curve = $form-model.value.extend-from($form-curve)
                     }
                 }
                 else {
@@ -307,9 +320,14 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     $chord-progression-model = $_ with $score-state.chord-plan.pop;
                 }
 
-                my $beats-per-phrase = $beats-per-bar * $phrase-length;
+                my $form-modulation = $form-curve.contour(($current-beat % $beats-per-form) / $beats-per-form);
+
+
                 my $contour = $pitch-curve.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase).cache;
-                my $rounded-contour = $score-state.map-into-pitch(|$contour.map( { $_ + 60 })).map( *.floor ).cache;
+                my $pitch-centre = Submarine::MusicEngine::Form::curve-center(|$contour);
+                my $contour-modulation = $pitch-centre - ($pitch-centre * $form-modulation);
+                # Also apply form-modulation here
+                my $rounded-contour = $score-state.map-into-pitch(|$contour.map( { ($_ + $contour-modulation) + 60 })).map( *.floor ).cache;
                 my ($beat-window-start, $beat-window-end) = (
                     $beat-of-bar,
                     $beat-of-bar + $score-state.rhythmn-layer[2].reflexive-step(1)
@@ -320,7 +338,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 my $step-down = 0;
                 $out.send-note: 'track-1',
                         12 + $score-state.map-onto-pitch(($rounded-contour.tail - $step-down-- - ($iterations-since-chord-change * 2)) % $score-state.pitch-layer[2].scale-pv.elems).head,
-                        $velocity,
+                        $velocity * $form-modulation,
                         $next-beat-interval / 2,
                         :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($_ - $beat-of-bar).head)
                     for $arp-rhythmn-model.rhythmn.sub-sequence($beat-window-start, $beat-window-end);
@@ -328,13 +346,13 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 # Bass pattern
                 $out.send-note: 'track-2',
                         $score-state.map-onto-pitch($rounded-contour.head).head + 12,
-                        $velocity, $next-beat-interval * 2,
+                        $velocity * $form-modulation, $next-beat-interval * 2,
                         :at($delta + $next-beat-interval + $score-state.map-onto-rhythmn($_ - $beat-of-bar).head)
                     for $bass-rhythmn-model.rhythmn.sub-sequence($beat-window-start, $beat-window-end);
 
                 # Send curve values for logging
                 $out.send-note: 'track-14',
-                    $_, $velocity, $next-beat-interval,
+                    $_, $velocity * $form-modulation, $next-beat-interval,
                     :at($delta + $next-beat-interval)
                 for $score-state.map-onto-pitch(|$rounded-contour);
             }

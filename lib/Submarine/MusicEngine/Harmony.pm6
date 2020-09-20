@@ -125,7 +125,7 @@ our class Curve {
 }
 
 #! Factory sub for declaring curve pairs
-sub curve(@curve-upper, @curve-lower) {
+our sub curve(@curve-upper, @curve-lower) {
     Curve.new(:@curve-upper, :@curve-lower)
 }
 
