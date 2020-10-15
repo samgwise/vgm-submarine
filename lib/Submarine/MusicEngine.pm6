@@ -280,12 +280,14 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                 $dynamic-level.update-lerp($current-beat);
                 my $velocity = 80;
 
+                my $form-modulation = $form-curve.contour(($current-beat % $beats-per-form) / $beats-per-form);
+
                 # Start of bar actions
                 if $is-on-beat and $beat-of-bar.floor mod $beats-per-bar == 0 {
                     say "Next chord";
                     # $chord-progression-model .= pick-next($beat-of-bar.floor % $phrase-length);
 
-                    my List $model-env = List($beat-of-bar.floor % ($phrase-length * $beats-per-bar));
+                    my List $model-env = List($beat-of-bar.floor % ($phrase-length * $beats-per-bar), $form-modulation);
 
                     $score-state.chord-plan.append: $score-state.plan-chords(1, $beats-per-bar, $model-env).flat;
 
@@ -319,9 +321,6 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     # Move the chord plan forward if there are more beats planned
                     $chord-progression-model = $_ with $score-state.chord-plan.pop;
                 }
-
-                my $form-modulation = $form-curve.contour(($current-beat % $beats-per-form) / $beats-per-form);
-
 
                 my $contour = $pitch-curve.contour(($beat-of-bar % $beats-per-phrase) / $beats-per-phrase).cache;
                 my $pitch-centre = Submarine::MusicEngine::Form::curve-center(|$contour);

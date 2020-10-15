@@ -49,11 +49,11 @@ our $submediant = ChordNode.new( :value(subdominant) );
 #
 
 # Helper sub for declaring Markov connections
-sub chord-vertex(ChordNode $from, ChordNode $to, :&probability = { 1.0 }) {
-    $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to)
+sub chord-vertex(ChordNode $from, ChordNode $to, :&probability = -> *@ { 1.0 }) {
+    $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to, :&probability)
 }
 
-my &end-of-phrase = -> $beat-of-phrase { ($beat-of-phrase/ 32) * 4 }
+my &end-of-phrase = -> $beat-of-phrase, $ { ($beat-of-phrase/ 32) * 4 }
 
 # Tonic
 chord-vertex($tonic, $submediant);

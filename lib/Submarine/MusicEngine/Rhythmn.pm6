@@ -70,24 +70,36 @@ our $semiquaver-pulse = RhythmnNode.new( :value(semiquaver-pulse) );
 #
 
 # Helper sub for declaring Markov connections
-sub rhythmn-vertex(RhythmnNode $from, RhythmnNode $to, :&probability = { 1.0 }) {
-    $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to)
+sub rhythmn-vertex(RhythmnNode $from, RhythmnNode $to, :&probability = -> *@ { 1.0 }) {
+    $from.choices.push: Submarine::MusicEngine::Markov::Connection.new(:$from, :$to, :&probability)
 }
 
-my &end-of-phrase = -> $beat-of-phrase { ($beat-of-phrase < 28) ?? 0.0 !! 10.0 }
+my &end-of-phrase = -> $beat-of-phrase, $ { ($beat-of-phrase < 28) ?? 0.0 !! 10.0 }
+
+# Returns a callable around the given function combined with a form modulation
+sub form-probability-combinator(Rat $form-wieght, &probability --> Callable) {
+    -> *@args {
+        probability(|@args)
+        * ( 1 - abs($form-wieght - @args[1]) )
+    }
+}
+
+# Probabilty for high quadrant of form
+my &active = form-probability-combinator(0.8, -> *@ { 1.4 });
+my &calm = form-probability-combinator(0.2, -> *@ { 1.4 });
 
 # Bass network
 rhythmn-vertex($on-the-beat1, $on-the-beat2);
 rhythmn-vertex($on-the-beat2, $on-the-beat3);
 rhythmn-vertex($on-the-beat3, $off-the-beat);
-rhythmn-vertex($on-the-beat3, $fast-bass);
+rhythmn-vertex($on-the-beat3, $fast-bass, :probability(&active));
 rhythmn-vertex($off-the-beat, $on-the-beat1);
 rhythmn-vertex($fast-bass, $on-the-beat1);
 
 
 # Arp network
-rhythmn-vertex($quaver-pulse, $semiquaver-pulse);
-rhythmn-vertex($quaver-pulse, $crotchet-pulse);
+rhythmn-vertex($quaver-pulse, $semiquaver-pulse, :probability(&active));
+rhythmn-vertex($quaver-pulse, $crotchet-pulse, :probability(&calm));
 rhythmn-vertex($quaver-pulse, $pause, :probability(&end-of-phrase));
 # rhythmn-vertex($quaver-pulse, $three-four);
 
@@ -98,7 +110,7 @@ rhythmn-vertex($crotchet-pulse, $quaver-pulse);
 rhythmn-vertex($crotchet-pulse, $pause, :probability(&end-of-phrase));
 
 rhythmn-vertex($pause, $quaver-pulse);
-rhythmn-vertex($pause, $semiquaver-pulse);
+rhythmn-vertex($pause, $semiquaver-pulse, :probability(&active));
 
 rhythmn-vertex($semiquaver-pulse, $quaver-pulse);
-rhythmn-vertex($semiquaver-pulse, $semiquaver-pulse);
+rhythmn-vertex($semiquaver-pulse, $semiquaver-pulse, :probability(&active));
