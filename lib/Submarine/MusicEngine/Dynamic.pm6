@@ -3,8 +3,8 @@ use ScaleVec;
 use Submarine::Utils;
 
 # Dynamic maps                              -, ppp, pp, p,  mp, mf, f,  ff,  fff, +
-our constant dynamic-strong is export = sv( 0,  15, 25, 40, 60, 75, 95, 105, 115, 127);
-our constant dynamic-weak is export   = sv( 0,  10, 20, 30, 50, 65, 87, 97,  107, 127);
+our constant dynamic-strong is export = sv( 0,  25, 35, 50, 60, 75, 95, 105, 115, 127);
+our constant dynamic-weak is export   = sv( 0,  15, 28, 42, 50, 65, 87, 97,  107, 127);
 # Derive moderate accent beat map to be half way between strong and week beats (Lerp with t=1/2)
 our constant dynamic-accent is export = sv(
     |zip(dynamic-weak.scale-pv, dynamic-strong.scale-pv,

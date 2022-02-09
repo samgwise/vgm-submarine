@@ -188,7 +188,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         # No change
                     }
                     when Environment::SafeReef {
-                        $score-state.pitch-layer[1] = safe-reef-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], safe-reef-scale);
+                        $score-state.pitch-layer[1] = safe-reef-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[1], safe-reef-scale);
                         #$score-state.rhythmn-layer[0] = relaxed;
                         $tempo-lerp .= for-target(relaxed, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time;

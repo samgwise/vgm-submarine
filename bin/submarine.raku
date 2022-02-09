@@ -127,7 +127,7 @@ react {
             }
             when '/Environment/RedWeed' {
                 put .path;
-                $out.send-note: 'track-1', 48, 60, 4;
+                #$out.send-note: 'track-1', 48, 60, 4;
                 update-current-state get-current-state.transform-environment(Environment::RedWeed)
             }
 
