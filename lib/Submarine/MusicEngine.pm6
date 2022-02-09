@@ -17,7 +17,9 @@ constant safe-reef-scale = sv(2, 4, 5, 7, 9, 11, 12, 14);
 # lydian
 constant drop-pod-scale = sv(5, 7, 9, 11, 12, 14, 16, 17);
 # mixolydian
-constant kelp-scale = sv(7, 9, 11, 12, 14, 16, 17, 19);
+#constant kelp-scale = sv(7, 9, 11, 12, 14, 16, 17, 19);
+# Phrygian
+constant kelp-scale = sv(4, 5, 7, 9, 11, 12, 14, 16);
 # Aeolian
 constant drop-off-scale = sv(9, 11, 12, 14, 16, 17, 19, 21);
 # major-minor
@@ -188,7 +190,7 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                         # No change
                     }
                     when Environment::SafeReef {
-                        $score-state.pitch-layer[1] = safe-reef-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[1], safe-reef-scale);
+                        $score-state.pitch-layer[1] = safe-reef-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], safe-reef-scale);
                         #$score-state.rhythmn-layer[0] = relaxed;
                         $tempo-lerp .= for-target(relaxed, $current-beat, 1/64);
                         $score-state.rhythmn-layer[2] = common-time;
@@ -204,9 +206,9 @@ our sub music-engine-runtime(Submarine::NoteOut::OscSender $out, &get-state, &is
                     when Environment::Kelp {
                         $score-state.pitch-layer[1] = kelp-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], kelp-scale);
                         #$score-state.rhythmn-layer[0] = lively;
-                        $tempo-lerp .= for-target(lively, $current-beat, 1/64);
+                        $tempo-lerp .= for-target(relaxed, $current-beat, 1/96);
                         $score-state.rhythmn-layer[2] = common-time;
-                        $dynamic-level .= for-target(dynamic-mf, $current-beat, 1/16);
+                        $dynamic-level .= for-target(dynamic-p, $current-beat, 1/16);
                     }
                     when Environment::RedWeed {
                         $score-state.pitch-layer[1] = redweed-scale.transpose($score-state.tonicise-scale-distance: $score-state.pitch-layer[2], redweed-scale);

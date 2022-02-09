@@ -112,7 +112,7 @@ react {
             # Environment
             when '/Environment/DropPod' {
                 put .path;
-                $out.send-note: 'track-0', 36 + 2, 120, 0.5;
+                # $out.send-note: 'track-0', 36 + 2, 120, 0.5;
                 update-current-state get-current-state.transform-environment(Environment::DropPod)
             }
             when '/Environment/SafeReef' {
@@ -129,6 +129,10 @@ react {
                 put .path;
                 #$out.send-note: 'track-1', 48, 60, 4;
                 update-current-state get-current-state.transform-environment(Environment::RedWeed)
+            }
+            when '/Environment/Kelp' {
+                put .path;
+                update-current-state get-current-state.transform-environment(Environment::Kelp)
             }
 
             # GameState
